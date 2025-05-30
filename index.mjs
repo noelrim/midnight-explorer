@@ -5,6 +5,14 @@ import WebSocket from 'ws';
 const app = express();
 app.use(express.json());
 
+function getLocalHourKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  return `${y}-${m}-${d}T${h}`; // e.g., "2025-05-30T22"
+}
+
 app.post('/collect', async (req, res) => {
   console.log('🚀 Midnight Explorer triggered');
 
@@ -52,14 +60,26 @@ app.post('/collect', async (req, res) => {
     }
   }, 1000 * 60 * 3);
 
+  const currentLocalHourKey = getLocalHourKey(); // capture once per run
+
   await new Promise((resolve, reject) => {
     client.subscribe({ query }, {
       next: ({ data }) => {
         if (!data?.blocks || finished) return;
 
         const block = data.blocks;
-        const blockTime = new Date(block.timestamp).getTime();
-        const hourKey = new Date(block.timestamp).toISOString().slice(0, 13); // 'YYYY-MM-DDTHH'
+        const blockTime = new Date(block.timestamp);
+        const blockHourKey = getLocalHourKey(blockTime);
+
+        // 🛑 Skip current local hour (only log completed hours)
+        if (blockHourKey === currentLocalHourKey && !finished) {
+          console.log(`⏹️ Block from current hour (${blockHourKey}) detected. Stopping.`);
+          finished = true;
+          clearTimeout(fallbackTimeout);
+          resolve();
+          return;
+        }
+
         lastHeight = block.height;
 
         // Update totals
@@ -68,8 +88,8 @@ app.post('/collect', async (req, res) => {
         stats.txs += txs.length;
 
         // Update per-hour breakdown
-        if (!breakdown[hourKey]) {
-          breakdown[hourKey] = {
+        if (!breakdown[blockHourKey]) {
+          breakdown[blockHourKey] = {
             blocks: 0,
             txs: 0,
             deploys: 0,
@@ -79,30 +99,31 @@ app.post('/collect', async (req, res) => {
           };
         }
 
-        breakdown[hourKey].blocks++;
-        breakdown[hourKey].txs += txs.length;
-        breakdown[hourKey].lastHeight = block.height;
+        breakdown[blockHourKey].blocks++;
+        breakdown[blockHourKey].txs += txs.length;
+        breakdown[blockHourKey].lastHeight = block.height;
 
         for (const tx of txs) {
           for (const action of tx.contractActions || []) {
             switch (action.__typename) {
               case 'ContractDeploy':
                 stats.deploys++;
-                breakdown[hourKey].deploys++;
+                breakdown[blockHourKey].deploys++;
                 break;
               case 'ContractUpdate':
                 stats.updates++;
-                breakdown[hourKey].updates++;
+                breakdown[blockHourKey].updates++;
                 break;
               case 'ContractCall':
                 stats.calls++;
-                breakdown[hourKey].calls++;
+                breakdown[blockHourKey].calls++;
                 break;
             }
           }
         }
 
-        if (blockTime >= requestStartTime && !finished) {
+        // Optionally stop if block is too new
+        if (blockTime.getTime() >= requestStartTime && !finished) {
           finished = true;
           clearTimeout(fallbackTimeout);
           resolve();
