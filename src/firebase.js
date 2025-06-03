@@ -3,17 +3,20 @@ import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
 // Try to use the Firebase App Hosting config if available
 const firebaseConfigString = process.env.FIREBASE_CONFIG;
-
+console.log(process.env.FIREBASE_CONFIG);
 let firebaseConfig;
 
 if (firebaseConfigString) {
   try {
+      console.log("FIREBASE APP HOSTING");
     firebaseConfig = JSON.parse(firebaseConfigString);
   } catch (e) {
+    
     console.error("Failed to parse FIREBASE_CONFIG:", e);
     throw new Error("Invalid Firebase configuration format.");
   }
 } else {
+  console.log("FALLBACK DEV ENV");
   // Fallback for local development using .env variables
   firebaseConfig = {
     apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
