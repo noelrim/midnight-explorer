@@ -1,9 +1,5 @@
-build:
-  command: npm run build
-  directory: build
-
 env:
   - variable: REACT_APP_FIREBASE_CONFIG
-    value: ${FIREBASE_CONFIG}
+    value: ${FIREBASE_WEBAPP_CONFIG}
     availability:
       - BUILD
