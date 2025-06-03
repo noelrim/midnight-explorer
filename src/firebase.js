@@ -1,19 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
-// First, try to use the full config if passed as JSON string
 let firebaseConfig;
 
-const firebaseConfigString = process.env.REACT_APP_FIREBASE_CONFIG;
-
-if (firebaseConfigString) {
-  try {
-    console.log("FIREBASE APP HOSTING");
-    firebaseConfig = JSON.parse(firebaseConfigString);
-  } catch (e) {
-    console.error("Failed to parse REACT_APP_FIREBASE_CONFIG:", e);
-    throw new Error("Invalid Firebase configuration format.");
-  }
+if (window.firebaseConfig && window.firebaseConfig.apiKey) {
+  console.log("FIREBASE APP HOSTING");
+  firebaseConfig = window.firebaseConfig;
 } else {
   console.log("FALLBACK DEV ENV");
   firebaseConfig = {

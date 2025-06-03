@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Moonlit - Midnight Explorer</title>
+
   <style>
     body::before {
       content: "";
@@ -444,7 +445,8 @@ button:disabled {
 </head>
 <body style="position: relative; z-index: 1;">
    <noscript>You need to enable JavaScript to run this app.</noscript>
-  
+    <script src="%PUBLIC_URL%/firebase-config.js"></script>
+
   <!-- Combined Panel: Search, Overview, Chart -->
   <div id="root" class="container"></div>
 
