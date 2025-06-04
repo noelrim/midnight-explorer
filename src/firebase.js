@@ -11,8 +11,6 @@ const firebaseConfig = {
   projectId: "midnight-explorer-df5bf",
   storageBucket: "midnight-explorer-df5bf.firebasestorage.app",
 };
-
-
 /*// ✅ Use a regular config object, not cert()
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -22,7 +20,6 @@ const firebaseConfig = {
   messagingSenderId: "",
   appId: "",
 };*/
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -31,3 +28,5 @@ const db = getFirestore(app);
 if (process.env.REACT_APP_FIREBASE_USE_EMULATOR === "true") {
   connectFirestoreEmulator(db, "localhost", 8080);
 }
+
+export { db };
