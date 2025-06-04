@@ -2,8 +2,7 @@ import React, { useEffect, useRef } from "react";
 import Chart from "chart.js/auto";
 import { useHourlyTransactionsChart } from "../hooks/useHourlyTransactionsChart";
 
-export default function MovingAverageChart() {
-  const { hourlyData } = useHourlyTransactionsChart();
+export default function MovingAverageChart({ hourlyData }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 

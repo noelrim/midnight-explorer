@@ -3,6 +3,7 @@ import RegistrationChart from "../components/RegistrationChart";
 import { useSPOList } from "../hooks/useSPOList";
 import SPODetailsCard from "../components/SPODetailsCard";
 import SPOPieCharts from "../components/SPOPieCharts";
+import DownloadCSVButton from "../components/DownloadCSVButton";
 
 import {
   createColumnHelper,
@@ -138,6 +139,16 @@ export default function SPOList() {
       </div>
       
       <h3>Registrations</h3>
+      <div style={{ width: "200px" }}>
+          <DownloadCSVButton
+          data={Object.entries(spos).map(([timestamp, entry]) => ({
+            timestamp,
+            ...entry
+          }))}
+          label="Download SPOs"
+          filename="chain-activity.csv"
+        />
+    </div>
       <div className="spo-controls">
         <div className="spo-left-controls">
           <input

@@ -20,10 +20,9 @@ Chart.register(
   Legend
 );
 
-export default function TxHeatmapChart() {
+export default function TxHeatmapChart({ hourlyData }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  const { hourlyData } = useHourlyTransactionsChart();
 
   useEffect(() => {
     if (!Object.keys(hourlyData).length) return;

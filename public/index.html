@@ -441,6 +441,18 @@ button:disabled {
   opacity: 0.5;
   cursor: default;
 }
+
+.dark-date-input {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  border: 1px solid #444;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.dark-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* Makes the calendar icon white */
+}
   </style>
 </head>
 <body style="position: relative; z-index: 1;">

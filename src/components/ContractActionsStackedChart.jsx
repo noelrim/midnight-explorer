@@ -82,7 +82,10 @@ const calls = sortedDays.map(day => dailyTotals[day].Call);
           },
         },
         plugins: {
-          legend: { labels: { color: "#fff" } },
+          legend: { },
+          datalabels: {
+            color: "#ffffff",
+          }
         },
       },
     });

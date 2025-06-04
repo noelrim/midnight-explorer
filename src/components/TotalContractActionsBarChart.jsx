@@ -2,8 +2,7 @@ import React, { useEffect, useRef } from "react";
 import Chart from "chart.js/auto";
 import { useHourlyTransactionsChart } from "../hooks/useHourlyTransactionsChart";
 
-export default function TotalContractActionsBarChart() {
-  const { hourlyData } = useHourlyTransactionsChart();
+export default function TotalContractActionsBarChart({hourlyData}) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -47,6 +46,9 @@ export default function TotalContractActionsBarChart() {
         },
         plugins: {
           legend: { display: false },
+          datalabels: {
+            color: "#ffffff" // 👈 currently hidden
+          }
         }
       }
     });
