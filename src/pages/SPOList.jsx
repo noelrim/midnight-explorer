@@ -146,7 +146,7 @@ export default function SPOList() {
             ...entry
           }))}
           label="Download SPOs"
-          filename="chain-activity.csv"
+          filename="spo-list.csv"
         />
     </div>
       <div className="spo-controls">

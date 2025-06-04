@@ -42,7 +42,7 @@ export default function ChainActivity() {
           timestamp,
           ...entry
         }))}
-        filename="spos-list.csv"
+        filename="chain-activity.csv"
         label="Download Chain Activity"
       />
       </div>
