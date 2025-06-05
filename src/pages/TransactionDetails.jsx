@@ -10,9 +10,8 @@ export default function TransactionDetails() {
 
   const { hash } = useParams();
   const { transaction, loading } = useTransaction(hash);
-  console.log(transaction);
+
   const date = new Date(transaction?.block?.timestamp);
-  console.log(date);
 
   if (loading) return <p>Loading transaction...</p>;
   if (!transaction) return <p>Transaction not found.</p>;

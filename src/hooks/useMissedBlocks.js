@@ -9,6 +9,7 @@ export function useMissedBlocks() {
   useEffect(() => {
     async function calculateMissed() {
       try {
+        console.log("Loading Missed blocks");
         // Get latest transaction to get lastBlockTimestamp and lastBlockHeight
         const txQuery = query(
           collection(db, "RecentTransactions"),

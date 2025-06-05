@@ -15,9 +15,7 @@ export default function App() {
 
   if (!unlocked) return <PasswordGate onAccessGranted={() => setUnlocked(true)} />;
 
-
-
-
+    console.count("Page Reloaded");
   return (
     <Router>
       <TopBar />

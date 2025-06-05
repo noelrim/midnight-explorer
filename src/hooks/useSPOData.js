@@ -1,16 +1,40 @@
+// src/hooks/useSPOData.js
 import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
+const spoCache = {
+  hydrated: false,
+  spoMap: new Map(),
+  totalAda: 0,
+  numberOfSPOs: 0,
+  sposMap: new Map(),
+};
+
 export function useSPOData(author) {
-  const [spoMap, setSpoMap] = useState(new Map());
-  const [totalAda, setTotalAda] = useState(0);
-  const [numberOfSPOs, setNumberOfSPOs] = useState(0);
-  const [sposMap, setSposMap] = useState(new Map());
-  const [singleSPO, setSingleSPO] = useState(null);
+  console.log("Loading SPOs");
+
+  const [spoState, setSpoState] = useState({
+    spoMap: new Map(),
+    totalAda: 0,
+    numberOfSPOs: 0,
+    sposMap: new Map(),
+    singleSPO: null,
+  });
 
   useEffect(() => {
+    // If cache is ready and author hasn't changed, just set from cache
+    if (spoCache.hydrated) {
+      console.log("SPO cache hit");
+      setSpoState({
+        ...spoCache,
+        singleSPO: author ? spoCache.sposMap.get(author) || null : null,
+      });
+      return;
+    }
+
     async function fetchSPOs() {
+      console.log("Fetching SPO data...");
       const spoSnap = await getDocs(collection(db, "SPOs"));
       const spoMetricsSnap = await getDocs(collection(db, "spometrics"));
 
@@ -20,13 +44,12 @@ export function useSPOData(author) {
       let ada = 0;
       let count = 0;
 
-      // Index block counts by AuraPubKey
-      spoMetricsSnap.forEach(doc => {
+      // Process spometrics
+      spoMetricsSnap.forEach((doc) => {
         spometric[doc.id] = doc.data().blockcount;
       });
 
-      let matchedSPO = null;
-
+      // Process SPOs
       spoSnap.forEach((doc) => {
         const d = doc.data();
         d.CardanoEpoch = d.CardanoEpoch || 0;
@@ -39,21 +62,26 @@ export function useSPOData(author) {
           ada += d.Stake;
           count++;
         }
-
-        if (d.AuraPubKey === author) {
-          matchedSPO = d;
-        }
       });
 
-      setSpoMap(map);
-      setTotalAda(ada);
-      setNumberOfSPOs(count);
-      setSposMap(spos);
-      setSingleSPO(matchedSPO); // ✅ always update when author changes
+      // Cache results
+      spoCache.spoMap = map;
+      spoCache.totalAda = ada;
+      spoCache.numberOfSPOs = count;
+      spoCache.sposMap = spos;
+      spoCache.hydrated = true;
+
+      setSpoState({
+        spoMap: map,
+        totalAda: ada,
+        numberOfSPOs: count,
+        sposMap: spos,
+        singleSPO: author ? spos.get(author) || null : null,
+      });
     }
 
     fetchSPOs();
-  }, [author]); // ✅ make reactive to author
+  }, [author]);
 
-  return { spoMap, totalAda, numberOfSPOs, singleSPO, sposMap };
+  return spoState;
 }

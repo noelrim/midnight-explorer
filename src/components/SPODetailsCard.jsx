@@ -1,9 +1,10 @@
 // src/components/SPODetailsCard.jsx
 import React from "react";
 import { useSingleSPO } from "../hooks/useSingleSPO";
+import { Link } from 'react-router-dom';
 
 export default function SPODetailsCard({ authorKey }) {
-  console.log("SPO-2:"+authorKey);
+
   const  spo  = useSingleSPO(authorKey);
 
   if (!spo) return <p>SPO not found.</p>;
@@ -14,7 +15,7 @@ export default function SPODetailsCard({ authorKey }) {
         <div className="overview-row">
           <div className="card-long">
             <h3>Ticker</h3>
-            <p><a href={spo.HomePage} target="_blank">{spo.Ticker}</a></p>
+            <p><Link to={`/spo/${authorKey}`}>{spo.Ticker}</Link></p>
           </div>
           <div className="card-long">
             <h3>Stake</h3>

@@ -1,41 +1,66 @@
-// src/hooks/useHourlyTransactionsChart.js
-import { useState, useEffect } from "react";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { useState, useEffect, useRef } from "react";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
+import cacheRef from "../cache";
 
 export function useHourlyTransactionsChart() {
-  const [chartData, setChartData] = useState({ labels: [], data: [] });
-  const [hourlyData, setHourlyData] = useState({});
+  console.log("useHourlyTransactionsChart called");
+
+  const [state, setState] = useState({
+    chartData: { labels: [], data: [] },
+    hourlyData: {}
+  });
+
+  const hasLoaded = useRef(false); // Prevents duplicate calls
 
   useEffect(() => {
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
+
+    // If we have valid cached data, use it
+    if (cacheRef.hydrated) {
+      console.log("Using cached data");
+      setState(prev => {
+        const sameChart = JSON.stringify(prev.chartData) === JSON.stringify(cacheRef.chartData);
+        const sameHourly = JSON.stringify(prev.hourlyData) === JSON.stringify(cacheRef.hourlyData);
+        if (sameChart && sameHourly) return prev;
+        return {
+          chartData: cacheRef.chartData,
+          hourlyData: cacheRef.hourlyData,
+        };
+      });
+      return;
+    }
+
+    // Otherwise, fetch fresh data
     async function fetchChartData() {
+      console.log("Fetching chart data...");
       const fifteenDaysAgo = new Date();
       fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-      const cutoffKey = fifteenDaysAgo.toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
 
       const hourlyQuery = query(
         collection(db, "HourlyTransactions"),
-       // where("__name__", ">=", cutoffKey),
         orderBy("__name__")
       );
+
       const hourlySnapshot = await getDocs(hourlyQuery);
 
       const dailyTotals = {};
       const fullHourly = {};
 
       hourlySnapshot.forEach((doc) => {
-        const id = doc.id; // format: "YYYY-MM-DDTHH"
+        const id = doc.id;
         const [dayKey] = id.split("T");
         const docData = doc.data();
-
         const total = docData.TotalTransactions || 0;
+
         dailyTotals[dayKey] = (dailyTotals[dayKey] || 0) + total;
 
         fullHourly[id] = {
           Deploy: docData.TotalDeploy || 0,
           Update: docData.TotalUpdate || 0,
           Call: docData.TotalCalls || 0,
-          TotalTransactions: total,
+          TotalTransactions: total
         };
       });
 
@@ -43,16 +68,24 @@ export function useHourlyTransactionsChart() {
         .sort(([a], [b]) => a.localeCompare(b))
         .slice(-15);
 
-      setChartData({
+      const finalChartData = {
         labels: sortedEntries.map(([day]) => day),
         data: sortedEntries.map(([, count]) => count),
-      });
+      };
 
-      setHourlyData(fullHourly);
+      // Cache and update state
+      cacheRef.chartData = finalChartData;
+      cacheRef.hourlyData = fullHourly;
+      cacheRef.hydrated = true;
+
+      setState({
+        chartData: finalChartData,
+        hourlyData: fullHourly
+      });
     }
 
     fetchChartData();
   }, []);
 
-  return { chartData, hourlyData };
+  return state;
 }

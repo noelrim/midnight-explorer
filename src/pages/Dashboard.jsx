@@ -3,25 +3,30 @@ import React, { useMemo, useRef } from "react";
 import { useSPOData } from "../hooks/useSPOData";
 import { useRecentBlocks } from "../hooks/useRecentBlocks";
 import { useRecentTransactions } from "../hooks/useRecentTransactions";
-import { useTotalTransactions } from "../hooks/useTotalTransactions";
 import { useHourlyTransactionsChart } from "../hooks/useHourlyTransactionsChart";
-import { useEpochCountdown } from "../hooks/useEpochCountdown";
 import { useMissedBlocks } from "../hooks/useMissedBlocks";
-
 import Search from "../components/Search";
 import OverviewCards from "../components/OverviewCards";
 import RecentBlocksTable from "../components/RecentBlocksTable";
 import RecentTransactionsTable from "../components/RecentTransactionsTable";
+import { useCurrentEpoch } from "../hooks/useCurrentEpoch";
 
 export default function Dashboard() {
   const { spoMap, totalAda, numberOfSPOs } = useSPOData();
   const blocks = useRecentBlocks();
   const transactions = useRecentTransactions();
-  const totalTxs = useTotalTransactions();
   const missedBlocks = useMissedBlocks();
-  const { currentEpoch, timeLeft, progressPercent } = useEpochCountdown();
-
+  const currentEpoch = useCurrentEpoch()
   const { chartData, hourlyData } = useHourlyTransactionsChart();
+
+
+  const totalTxs = useMemo(() => {
+    return Object.values(hourlyData).reduce(
+      (sum, entry) => sum + (entry.TotalTransactions || 0),
+      0
+    );
+  }, [hourlyData]);
+
 
   return (
     <>
@@ -33,8 +38,6 @@ export default function Dashboard() {
           totalTxs={totalTxs}
           missedBlocks={missedBlocks}
           currentEpoch={currentEpoch}
-          timeLeft={timeLeft}
-          progressPercent={progressPercent}
           chartData={chartData}   // ✅ correctly pass chartData
         />
       </div>
