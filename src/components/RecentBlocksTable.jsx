@@ -1,9 +1,22 @@
-import React from "react";
+import React,  { useEffect, useState, useRef }  from "react";
 import { Link } from 'react-router-dom';
 import { timeAgo } from "../utils/time"; // Make sure to export timeAgo or define locally
+let hasShownInitialDelay = false;
 
 export default function RecentBlocksTable({ blocks, spoMap }) {
   const now = Date.now();
+  const [ready, setReady] = useState(false);
+
+
+    useEffect(() => {
+    if (!hasShownInitialDelay) {
+      const timer = setTimeout(() => {
+        hasShownInitialDelay = true;
+        setReady(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    } else  { setReady(true); }
+    }, []);
 
   return (
     <div className="panel">
@@ -18,27 +31,28 @@ export default function RecentBlocksTable({ blocks, spoMap }) {
           </tr>
         </thead>
         <tbody>
-          {blocks.length === 0 && (
+          {!ready || blocks.length === 0 ? (
             <tr>
               <td colSpan={4} style={{ textAlign: "center" }}>
                 Loading blocks...
               </td>
             </tr>
-          )}
-          {blocks.map((b) => (
+          ) : (
+          blocks.map((b) => (
             <tr key={b.id}>
               <td>
-                <Link to={`/block/${b.BlockHeight}`}>{b.BlockHeight}</Link>
+                <Link to={`/block/${b.BlockHeight}`}>{b.height}</Link>
                 <br />
-                <span className="block-time">{timeAgo(now, b.Timestamp.seconds * 1000)}</span>
+                <span className="block-time">{timeAgo(now, b.timestamp)}</span>
               </td>
               <td>
-                <Link to={`/spo/${b.Author}`}>{spoMap.get(b.Author) || b.Author}</Link>
+                <Link to={`/spo/${b.author}`}>{spoMap.get(b.author) || b.author}</Link>
              </td>
-              <td>{b.NumTransactions}</td>
+              <td>{b.transactions?.length}</td>
               <td>—</td>
             </tr>
-          ))}
+            ))
+          )}
         </tbody>
       </table>
     </div>

@@ -13,6 +13,23 @@ const REQUEST = {
       return null;
     }
   },
+
+
+
+
+ getLastBlock() {
+    const payload = {
+      query: `
+        query {
+          block {
+            height
+          }
+        }
+      `,
+    };
+    return this.fetchPOSTResponse(this.INDEXER_ENDPOINT, payload);
+  },
+
   async getBlockAtHeight(height) {
     const payload = {
       query: `

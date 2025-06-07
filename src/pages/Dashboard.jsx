@@ -10,15 +10,16 @@ import OverviewCards from "../components/OverviewCards";
 import RecentBlocksTable from "../components/RecentBlocksTable";
 import RecentTransactionsTable from "../components/RecentTransactionsTable";
 import { useCurrentEpoch } from "../hooks/useCurrentEpoch";
+import { useLiveRecentBlocks } from "../hooks/useLiveRecentBlocks";
 
-export default function Dashboard() {
+export default function Dashboard({blockStream, transactionStream}) {
   const { spoMap, totalAda, numberOfSPOs } = useSPOData();
-  const blocks = useRecentBlocks();
+  //const blocks = useRecentBlocks();
   const transactions = useRecentTransactions();
   const missedBlocks = useMissedBlocks();
   const currentEpoch = useCurrentEpoch()
   const { chartData, hourlyData } = useHourlyTransactionsChart();
-
+  const blocks = blockStream;
 
   const totalTxs = useMemo(() => {
     return Object.values(hourlyData).reduce(
@@ -42,7 +43,7 @@ export default function Dashboard() {
         />
       </div>
       <div className="data-panels">
-        <RecentTransactionsTable transactions={transactions} />
+        <RecentTransactionsTable tx={transactionStream} />
         <RecentBlocksTable blocks={blocks} spoMap={spoMap} />
       </div>
     </>

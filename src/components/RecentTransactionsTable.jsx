@@ -1,13 +1,28 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from 'react-router-dom';
-import { timeAgo } from "../utils/time"; // Same here, ensure this function is accessible
+import { timeAgo } from "../utils/time";
 
-export default function RecentTransactionsTable({ transactions }) {
+let hasShownInitialDelay = false;
+
+export default function RecentTransactionsTable({ tx }) {
   const now = Date.now();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!hasShownInitialDelay) {
+      const timer = setTimeout(() => {
+        hasShownInitialDelay = true;
+        setReady(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    } else {
+      setReady(true);
+    }
+  }, []);
 
   return (
     <div className="panel">
-      <h2>Recent Transactions</h2>
+      <h2>Recent Transactions <span style={{ fontSize: "12px" }}>(last hour)</span></h2>
       <table>
         <thead>
           <tr>
@@ -18,27 +33,30 @@ export default function RecentTransactionsTable({ transactions }) {
           </tr>
         </thead>
         <tbody>
-          {transactions.length === 0 && (
+          {!ready || tx?.length === 0 ? (
             <tr>
               <td colSpan={4} style={{ textAlign: "center" }}>
                 Loading transactions...
               </td>
             </tr>
+          ) : (
+            tx.map((t) => (
+              <tr key={t.hash}>
+                <td>
+                  <Link to={`/transaction/${t.hash}`}>
+                    {t.hash.slice(0, 8)}..{t.hash.slice(-4)}
+                  </Link>
+                  <br />
+                  <span className="transaction-time">{timeAgo(now, t.timestamp)}</span>
+                </td>
+                <td>
+                  <Link to={`/block/${t.blockHeight}`}>{t.blockHeight}</Link>
+                </td>
+                <td>{t.OutputAddress || "—"}</td>
+                <td>{t.TotalOutput || "—"}</td>
+              </tr>
+            ))
           )}
-          {transactions.map((t) => (
-            <tr key={t.id}>
-              <td>
-                <Link to={`/transaction/${t.id}`}>{t.id.slice(0, 8)}..{t.id.slice(-4)}</Link>
-                <br />
-                <span className="transaction-time">{timeAgo(now, t.Timestamp.seconds * 1000)}</span>
-              </td>
-              <td>
-                <Link to={`/block/${t.BlockHeight}`}> {t.BlockHeight}</Link>
-               </td>
-              <td>{t.OutputAddress || "—"}</td>
-              <td>{t.TotalOutput || "—"}</td>
-            </tr>
-          ))}
         </tbody>
       </table>
     </div>
