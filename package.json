@@ -15,6 +15,7 @@
     "chart.js": "^4.4.9",
     "chartjs-chart-matrix": "^3.0.0",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "date-fns": "^4.1.0",
     "firebase": "^11.8.1",
     "graphql-ws": "^5.16.2",
     "react": "^19.1.0",

@@ -28,33 +28,46 @@ export function useHourlyTransactionsChart() {
       return;
     }
 
-    // Otherwise, fetch fresh data
     async function fetchChartData() {
       console.log("Fetching hourly transactions...");
-      const fifteenDaysAgo = new Date();
-      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
       const response = await fetch("/api/transaction/hourly");
       const { docs: hourlySnapshot } = await response.json();
 
       const dailyTotals = {};
       const fullHourly = {};
+      const hourCountPerDay = {};
 
+      // First pass: count total tx, blocks, and hours per day
       hourlySnapshot.forEach((doc) => {
-        const id = doc.id;
+        const id = doc.id; 
         const [dayKey] = id.split("T");
         const docData = doc.data;
-        const total = docData.TotalTransactions || 0;
+        const totalTx = docData.TotalTransactions || 0;
+        const totalBlocks = docData.TotalBlocks || 0;
 
-        dailyTotals[dayKey] = (dailyTotals[dayKey] || 0) + total;
+        dailyTotals[dayKey] = (dailyTotals[dayKey] || 0) + totalTx;
+        hourCountPerDay[dayKey] = (hourCountPerDay[dayKey] || 0) + 1;
 
         fullHourly[id] = {
           Deploy: docData.TotalDeploy || 0,
           Update: docData.TotalUpdate || 0,
           Call: docData.TotalCalls || 0,
-          TotalTransactions: total
+          TotalTransactions: totalTx,
+          TotalBlocks: totalBlocks,
+          ExpectedBlocks: 0
         };
       });
+
+      // Second pass: assign dynamic expected blocks per hour
+      for (const [id, entry] of Object.entries(fullHourly)) {
+        const [dayKey] = id.split("T");
+        const numHours = hourCountPerDay[dayKey] || 0;
+        const expectedPerHour = numHours > 0 ? (numHours * 600) / numHours : 0;
+        entry.ExpectedBlocks = 600; // We still expect 600 per recorded hour
+
+        console.log("Hour counts per day:", hourCountPerDay);
+
+      }
 
       const sortedEntries = Object.entries(dailyTotals)
         .sort(([a], [b]) => a.localeCompare(b))
