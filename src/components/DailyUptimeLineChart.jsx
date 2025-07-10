@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Chart,
   LineController,
@@ -9,6 +9,7 @@ import {
   Tooltip,
   CategoryScale,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 
 Chart.register(
   LineController,
@@ -17,31 +18,59 @@ Chart.register(
   LinearScale,
   CategoryScale,
   Title,
-  Tooltip
+  Tooltip,
+  ChartDataLabels
 );
 
 export default function DailyUptimeLineChart({ dailyData }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const [aggregationMode, setAggregationMode] = useState("weekly");
 
-  const dailyChartData = dailyData || [];
   const isLoading = false;
   const isError = false;
 
+  const aggregateUptime = (data, mode) => {
+    const groupKey = (dateStr) => {
+      const date = new Date(dateStr);
+      if (mode === "weekly") {
+        const year = date.getFullYear();
+        const jan1 = new Date(year, 0, 1);
+        const dayOfYear = Math.floor((date - jan1) / (1000 * 60 * 60 * 24)) + 1;
+        const week = Math.ceil((dayOfYear + jan1.getDay()) / 7);
+        return `${year}-W${String(week).padStart(2, "0")}`;
+      } else if (mode === "monthly") {
+        return dateStr.slice(0, 7); // "YYYY-MM"
+      }
+      return dateStr;
+    };
+
+    const grouped = {};
+    data.forEach(({ date, blockCount, expectedBlocks }) => {
+      if (!date) return;
+      const key = groupKey(date);
+      if (!grouped[key]) grouped[key] = { totalBlocks: 0, totalExpected: 0 };
+      grouped[key].totalBlocks += blockCount || 0;
+      grouped[key].totalExpected += expectedBlocks || 1;
+    });
+
+    return Object.entries(grouped).map(([label, { totalBlocks, totalExpected }]) => ({
+      label,
+      uptime: parseFloat(((totalBlocks / totalExpected) * 100).toFixed(2)),
+    }));
+  };
+
   useEffect(() => {
-    if (isLoading || isError || !dailyChartData.length) return;
+    if (isLoading || isError || !dailyData?.length) return;
 
-    const sortedData = [...dailyChartData].sort((a, b) =>
-      a.date.localeCompare(b.date)
-    );
-
-    const labels = sortedData.map((entry) => entry.date);
-    const uptimes = sortedData.map((entry) => entry.uptimePercent);
+    const chartData = aggregateUptime(dailyData, aggregationMode);
+    const labels = chartData.map((entry) => entry.label);
+    const uptimes = chartData.map((entry) => entry.uptime);
 
     const pointColors = uptimes.map((uptime) => {
-      if (uptime < 99) return "rgba(255, 80, 80, 1)";       // Red
-      if (uptime < 99.9) return "rgba(255, 165, 0, 1)";     // Orange
-      return "rgba(0, 194, 100, 1)";                        // Green
+      if (uptime < 99) return "rgba(255, 80, 80, 1)";
+      if (uptime < 99.9) return "rgba(255, 165, 0, 1)";
+      return "rgba(0, 194, 100, 1)";
     });
 
     const ctx = chartRef.current.getContext("2d");
@@ -53,7 +82,7 @@ export default function DailyUptimeLineChart({ dailyData }) {
         labels,
         datasets: [
           {
-            label: "Daily Uptime (%)",
+            label: "Uptime (%)",
             data: uptimes,
             borderColor: "rgba(150, 150, 150, 0.4)",
             backgroundColor: pointColors,
@@ -87,17 +116,66 @@ export default function DailyUptimeLineChart({ dailyData }) {
               label: (ctx) => `${ctx.raw}% uptime on ${ctx.label}`,
             },
           },
-          legend: { labels: { color: "#fff" } },
+          datalabels: {
+            display: false, 
+            color: "#fff",
+            align: "bottom",
+            anchor: "end",
+            font: {
+              size: 11,
+              weight: "bold",
+            },
+            formatter: (value) => `${value}%`,
+          },
+          legend: {  display: false, },
         },
       },
     });
-
+    if (chartData.length <= 30) {
+      chartInstance.current.options.plugins.datalabels.display = true;
+      chartInstance.current.update();
+    }
     return () => chartInstance.current?.destroy();
-  }, [dailyChartData, isLoading, isError]);
+  }, [dailyData, aggregationMode, isLoading, isError]);
 
   return (
-    <div style={{ height: "400px", width: "100%" }}>
-      <canvas ref={chartRef} />
+    <div style={{ width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <select
+          value={aggregationMode}
+          onChange={(e) => setAggregationMode(e.target.value)}
+          style={{
+            padding: "4px 8px",
+            background: "#222",
+            color: "#fff",
+            border: "1px solid #444",
+            borderRadius: 4,
+          }}
+        >
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <ul style={{ display: "flex", gap: "16px", listStyle: "none", paddingLeft: 0, marginTop: 8, fontSize: "11px"}}>
+        <li style={{ display: "flex", alignItems: "center", color: "#fff" }}>
+          <span style={{ width: 12, height: 12, backgroundColor: "rgba(255, 80, 80, 1)", borderRadius: "50%", display: "inline-block", marginRight: 6 }} />
+          &lt; 99%
+        </li>
+        <li style={{ display: "flex", alignItems: "center", color: "#fff" }}>
+          <span style={{ width: 12, height: 12, backgroundColor: "rgba(255, 165, 0, 1)", borderRadius: "50%", display: "inline-block", marginRight: 6 }} />
+          99–99.89%
+        </li>
+        <li style={{ display: "flex", alignItems: "center", color: "#fff" }}>
+          <span style={{ width: 12, height: 12, backgroundColor: "rgba(0, 194, 100, 1)", borderRadius: "50%", display: "inline-block", marginRight: 6 }} />
+          ≥ 99.9%
+        </li>
+      </ul>
+
+      <div style={{ height: "400px" }}>
+        <canvas ref={chartRef} />
+      </div>
+
     </div>
   );
 }

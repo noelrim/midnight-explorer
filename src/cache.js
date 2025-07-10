@@ -2,6 +2,7 @@
 const cacheRef = {
   chartData: null,
   hourlyData: null,
+  dailyBlockData: [],
   hydrated: false,
 };
 export default cacheRef;
