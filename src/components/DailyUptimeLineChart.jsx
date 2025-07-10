@@ -7,11 +7,9 @@ import {
   LinearScale,
   Title,
   Tooltip,
-  CategoryScale
+  CategoryScale,
 } from "chart.js";
-import { useHourlyTransactionsChart } from "../hooks/useHourlyTransactionsChart";
 
-// Register necessary Chart.js components
 Chart.register(
   LineController,
   LineElement,
@@ -22,41 +20,28 @@ Chart.register(
   Tooltip
 );
 
-export default function DailyUptimeLineChart({ hourlyData }) {
+export default function DailyUptimeLineChart({ dailyData }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
+  const dailyChartData = dailyData || [];
+  const isLoading = false;
+  const isError = false;
+
   useEffect(() => {
-    if (!Object.keys(hourlyData).length) return;
+    if (isLoading || isError || !dailyChartData.length) return;
 
-    const dailyBlocks = {};
+    const sortedData = [...dailyChartData].sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
 
-    // Aggregate total blocks per day from hourlyData
-    Object.entries(hourlyData).forEach(([id, data]) => {
-      const [day] = id.split("T");
-      const blocks = data.TotalBlocks ?? 0;
-      dailyBlocks[day] = (dailyBlocks[day] || 0) + blocks;
-    });
-
-    const sortedDays = Object.keys(dailyBlocks).sort();
-    const dailyExpectedBlocks = {};
-    Object.entries(hourlyData).forEach(([id, data]) => {
-      const [day] = id.split("T");
-      const expected = data.ExpectedBlocks ?? 600;
-      dailyExpectedBlocks[day] = (dailyExpectedBlocks[day] || 0) + expected;
-    });
-
-    const uptimes = sortedDays.map((day) => {
-      const blocks = dailyBlocks[day];
-      const expected = dailyExpectedBlocks[day] || 1; // prevent divide-by-zero
-      const uptime = (blocks / expected) * 100;
-      return parseFloat(uptime.toFixed(3));
-});
+    const labels = sortedData.map((entry) => entry.date);
+    const uptimes = sortedData.map((entry) => entry.uptimePercent);
 
     const pointColors = uptimes.map((uptime) => {
-      if (uptime < 99) return "rgba(255, 80, 80, 1)";         // Red
-      if (uptime < 99.9) return "rgba(255, 165, 0, 1)";       // Orange
-      return "rgba(0, 194, 100, 1)";                          // Green
+      if (uptime < 99) return "rgba(255, 80, 80, 1)";       // Red
+      if (uptime < 99.9) return "rgba(255, 165, 0, 1)";     // Orange
+      return "rgba(0, 194, 100, 1)";                        // Green
     });
 
     const ctx = chartRef.current.getContext("2d");
@@ -65,7 +50,7 @@ export default function DailyUptimeLineChart({ hourlyData }) {
     chartInstance.current = new Chart(ctx, {
       type: "line",
       data: {
-        labels: sortedDays,
+        labels,
         datasets: [
           {
             label: "Daily Uptime (%)",
@@ -87,20 +72,20 @@ export default function DailyUptimeLineChart({ hourlyData }) {
         scales: {
           x: {
             ticks: { color: "#fff" },
-            grid: { color: "#333" }
+            grid: { color: "#333" },
           },
           y: {
             beginAtZero: true,
             suggestedMax: 100,
             ticks: { color: "#fff" },
-            grid: { color: "#333" }
+            grid: { color: "#333" },
           },
         },
         plugins: {
           tooltip: {
             callbacks: {
-              label: (ctx) => `${ctx.raw}% uptime on ${ctx.label}`
-            }
+              label: (ctx) => `${ctx.raw}% uptime on ${ctx.label}`,
+            },
           },
           legend: { labels: { color: "#fff" } },
         },
@@ -108,7 +93,7 @@ export default function DailyUptimeLineChart({ hourlyData }) {
     });
 
     return () => chartInstance.current?.destroy();
-  }, [hourlyData]);
+  }, [dailyChartData, isLoading, isError]);
 
   return (
     <div style={{ height: "400px", width: "100%" }}>

@@ -64,9 +64,6 @@ export function useHourlyTransactionsChart() {
         const numHours = hourCountPerDay[dayKey] || 0;
         const expectedPerHour = numHours > 0 ? (numHours * 600) / numHours : 0;
         entry.ExpectedBlocks = 600; // We still expect 600 per recorded hour
-
-        console.log("Hour counts per day:", hourCountPerDay);
-
       }
 
       const sortedEntries = Object.entries(dailyTotals)

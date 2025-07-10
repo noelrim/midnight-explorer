@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useHourlyTransactionsChart } from "../hooks/useHourlyTransactionsChart";
-import { useWeeklyBlocksChart } from "../hooks/useWeeklyBlocksChart";
+import { useDailyBlockData } from "../hooks/useDailyBlockData";
 
 import DownloadCSVButton from "../components/DownloadCSVButton";
 import ContractActionsStackedChart from "../components/ContractActionsStackedChart";
@@ -9,15 +9,14 @@ import TotalContractActionsBarChart from "../components/TotalContractActionsBarC
 import MovingAverageChart from "../components/MovingAverageChart";
 import DailyUptimeLineChart from "../components/DailyUptimeLineChart";
 
-
 export default function ChainActivity() {
   const { hourlyData } = useHourlyTransactionsChart();
-  const { weeklyBlockTotals } = useWeeklyBlocksChart();
+  const { dailyChartData = [] } = useDailyBlockData();
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const filteredData = useMemo(() => {
+  const filteredHourlyData = useMemo(() => {
     if (!startDate || !endDate) return hourlyData;
 
     return Object.fromEntries(
@@ -28,10 +27,13 @@ export default function ChainActivity() {
     );
   }, [hourlyData, startDate, endDate]);
 
-  const weeklyBlockArray = useMemo(() => {
-    if (!weeklyBlockTotals) return [];
-    return Object.entries(weeklyBlockTotals).map(([week, total]) => ({ week, total }));
-  }, [weeklyBlockTotals]);
+  const filteredDailyData = useMemo(() => {
+    if (!startDate || !endDate) return dailyChartData;
+
+    return dailyChartData.filter(({ date }) => {
+      return date >= startDate && date <= endDate;
+    });
+  }, [dailyChartData, startDate, endDate]);
 
   return (
     <div className="panel-wrapper" style={{ padding: "2rem" }}>
@@ -58,7 +60,7 @@ export default function ChainActivity() {
           />
         </label>
         <DownloadCSVButton
-          data={Object.entries(filteredData).map(([timestamp, entry]) => ({
+          data={Object.entries(filteredHourlyData).map(([timestamp, entry]) => ({
             timestamp,
             ...entry,
           }))}
@@ -74,11 +76,11 @@ export default function ChainActivity() {
       >
         <div style={{ flex: "1 1 50%", maxWidth: "50%" }}>
           <h3>Smart Contract Actions (Deploy / Update / Call)</h3>
-          <ContractActionsStackedChart hourlyData={filteredData} />
+          <ContractActionsStackedChart hourlyData={filteredHourlyData} />
         </div>
         <div style={{ flex: "1 1 50%", maxWidth: "50%" }}>
           <h3>Total Contract Actions</h3>
-          <TotalContractActionsBarChart hourlyData={filteredData} />
+          <TotalContractActionsBarChart hourlyData={filteredHourlyData} />
         </div>
       </div>
 
@@ -89,19 +91,19 @@ export default function ChainActivity() {
       >
         <div style={{ flex: "1 1 50%" }}>
           <h3>Heatmap (Transactions by Hour/Day)</h3>
-          <TxHeatmapChart hourlyData={filteredData} />
+          <TxHeatmapChart hourlyData={filteredHourlyData} />
         </div>
         <div style={{ flex: "1 1 50%" }}>
           <h3>6-Hour Moving Average</h3>
-          <MovingAverageChart hourlyData={filteredData} />
+          <MovingAverageChart hourlyData={filteredHourlyData} />
         </div>
       </div>
 
-<div style={{ marginTop: "2rem" }}>
-  <h3>Daily Uptime (%)</h3>
-  <DailyUptimeLineChart hourlyData={filteredData} />
-</div>
-
+      {/* Daily Uptime Chart */}
+      <div style={{ marginTop: "2rem" }}>
+        <h3>Daily Uptime (%)</h3>
+        <DailyUptimeLineChart dailyData={filteredDailyData} />
+      </div>
     </div>
   );
 }
